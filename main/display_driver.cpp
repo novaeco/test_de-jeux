@@ -36,7 +36,8 @@ bool DisplayDriver::initialize() {
         .duty_resolution = LEDC_TIMER_10_BIT,
         .timer_num = LEDC_TIMER_0,
         .freq_hz = 1000,
-        .clk_cfg = LEDC_AUTO_CLK
+        .clk_cfg = LEDC_AUTO_CLK,
+        .deconfigure = false
     };
     ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
     
@@ -47,7 +48,9 @@ bool DisplayDriver::initialize() {
         .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = LEDC_TIMER_0,
         .duty = 0,
-        .hpoint = 0
+        .hpoint = 0,
+        .sleep_mode = LEDC_SLEEP_LEV_LOW,
+        .flags = 0
     };
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
     
@@ -79,7 +82,7 @@ bool DisplayDriver::configure_lcd_interface() {
         .quadhd_io_num = -1,
         .max_transfer_sz = LCD_WIDTH * LCD_HEIGHT * sizeof(uint16_t),
         .flags = 0,
-        .isr_cpu_id = INTR_CPU_ID_AUTO,
+        .isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO,
         .intr_flags = 0,
     };
     
@@ -95,9 +98,15 @@ bool DisplayDriver::configure_lcd_interface() {
         .user_ctx = nullptr,
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
+        .cs_ena_pretrans = 0,
+        .cs_ena_posttrans = 0,
         .flags = {
+            .dc_high_on_cmd = 0,
             .dc_low_on_data = 0,
+            .dc_low_on_param = 0,
             .octal_mode = 0,
+            .quad_mode = 0,
+            .sio_mode = 0,
             .lsb_first = 0
         }
     };
@@ -110,10 +119,13 @@ bool DisplayDriver::configure_lcd_interface() {
         .reset_gpio_num = LCD_RST_PIN,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
         .bits_per_pixel = LCD_BIT_PER_PIXEL,
+        .data_endian = LCD_RGB_DATA_ENDIAN_LITTLE,
+        .flags = 0,
+        .vendor_config = nullptr
     };
     
     // Utiliser un driver LCD générique
-    ESP_ERROR_CHECK(esp_lcd_new_panel_st7796(io_handle, &panel_config, &panel_handle));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, false));
@@ -152,7 +164,7 @@ bool DisplayDriver::configure_lvgl() {
     return true;
 }
 
-void DisplayDriver::lvgl_flush_cb(lv_display_t* display, const lv_area_t* area, lv_color_t* color_map) {
+void DisplayDriver::lvgl_flush_cb(lv_display_t* display, const lv_area_t* area, uint8_t* color_map) {
     DisplayDriver* driver = static_cast<DisplayDriver*>(lv_display_get_user_data(display));
     
     int offsetx1 = area->x1;

@@ -36,7 +36,7 @@ private:
     static lv_color_t* buf2;
     
     // Driver callbacks
-    static void lvgl_flush_cb(lv_display_t* display, const lv_area_t* area, lv_color_t* color_map);
+    static void lvgl_flush_cb(lv_display_t* display, const lv_area_t* area, uint8_t* color_map);
     static void lvgl_touch_cb(lv_indev_t* indev, lv_indev_data_t* data);
     
     // Configuration LCD

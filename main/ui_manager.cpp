@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include "include/ui_manager.h"
 #include "include/species_database.h"
 #include "esp_log.h"
@@ -204,7 +205,7 @@ void UIManager::create_feeding_interface() {
     
     // Boutons de nourriture spécifique
     const char* food_names[] = {"🦗 Grillons", "🪱 Vers", "🥬 Légumes", "🧬 Compléments"};
-    FoodType food_types[] = {CRICKETS, MEALWORMS, LEAFY_GREENS, CALCIUM_SUPPLEMENT};
+    FoodType food_types[] = {FoodType::CRICKETS, FoodType::MEALWORMS, FoodType::LEAFY_GREENS, FoodType::CALCIUM_SUPPLEMENT};
     
     for (int i = 0; i < 4; i++) {
         lv_obj_t* food_btn = lv_btn_create(feeding_panel);
@@ -280,7 +281,7 @@ void UIManager::create_navigation_menu() {
 // Callbacks d'événements
 void UIManager::on_feed_button(lv_event_t* e) {
     UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
-    lv_obj_t* btn = lv_event_get_target(e);
+    lv_obj_t* btn = static_cast<lv_obj_t*>(lv_event_get_target(e));
     FoodType food = static_cast<FoodType>((intptr_t)lv_obj_get_user_data(btn));
     
     uint8_t selected = ui->game_engine->get_selected_reptile();
@@ -294,13 +295,13 @@ void UIManager::on_feed_button(lv_event_t* e) {
 
 void UIManager::on_temperature_adjust(lv_event_t* e) {
     UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
-    lv_obj_t* slider = lv_event_get_target(e);
+    lv_obj_t* slider = static_cast<lv_obj_t*>(lv_event_get_target(e));
     int32_t value = lv_slider_get_value(slider);
     
     uint8_t selected = ui->game_engine->get_selected_reptile();
     if (ui->game_engine->adjust_temperature(selected, (float)value)) {
         char msg[64];
-        snprintf(msg, sizeof(msg), "🌡️ Température: %d°C", value);
+        snprintf(msg, sizeof(msg), "🌡️ Température: %" PRId32 "°C", value);
         ui->show_notification(msg, false);
     }
 }
@@ -355,7 +356,7 @@ void UIManager::show_notification(const char* message, bool is_warning) {
     
     // Auto-masquage après 3 secondes
     lv_timer_create([](lv_timer_t* timer) {
-        UIManager* ui = static_cast<UIManager*>(timer->user_data);
+        UIManager* ui = static_cast<UIManager*>(lv_timer_get_user_data(timer));
         ui->hide_notification();
         lv_timer_del(timer);
     }, 3000, this);

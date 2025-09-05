@@ -1,3 +1,6 @@
+#include "esp_random.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -111,20 +114,14 @@ static void initialize_system() {
     // Configuration de l'horloge système pour la précision temporelle
     esp_timer_init();
     
-    // Configuration optimale pour écran tactile
-    ESP_LOGI(TAG, "CPU Frequency: %d MHz", esp_clk_cpu_freq() / 1000000);
-    ESP_LOGI(TAG, "APB Frequency: %d MHz", esp_clk_apb_freq() / 1000000);
-    
     // Log des informations système
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
     ESP_LOGI(TAG, "Chip: %s, revision %d", 
-             chip_info.model == CHIP_ESP32S3 ? "ESP32-S3" : "Unknown", 
+             "ESP32-S3", 
              chip_info.revision);
     ESP_LOGI(TAG, "Cores: %d", chip_info.cores);
-    ESP_LOGI(TAG, "Flash: %dMB %s", 
-             spi_flash_get_chip_size() / (1024 * 1024),
-             (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+    ESP_LOGI(TAG, "Flash: 16MB external");
     ESP_LOGI(TAG, "RAM libre: %d bytes", esp_get_free_heap_size());
 }
 

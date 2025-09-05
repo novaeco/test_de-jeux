@@ -1,3 +1,4 @@
+#include "esp_random.h"
 #include "include/game_engine.h"
 #include "include/species_database.h"
 #include "esp_timer.h"
@@ -74,11 +75,11 @@ void GameEngine::update_physiology(Reptile& reptile, uint32_t delta_time) {
     
     // Mise à jour de la faim basée sur le métabolisme de l'espèce
     if (time_since_feeding > feeding_interval) {
-        reptile.health.hunger_level = std::min(100, reptile.health.hunger_level + (delta_time / 3600000)); // +1 par heure
+        reptile.health.hunger_level = std::min(100U, reptile.health.hunger_level + (uint8_t)(delta_time / 3600000)); // +1 par heure
     }
     
     // Déshydratation graduelle
-    reptile.health.hydration = std::max(0, reptile.health.hydration - (delta_time / 7200000)); // -1 toutes les 2h
+    reptile.health.hydration = std::max(0U, reptile.health.hydration - (uint8_t)(delta_time / 7200000)); // -1 toutes les 2h
     
     // Impact environnemental sur la santé
     uint8_t env_quality = calculate_health_impact(reptile, reptile.habitat);
@@ -90,7 +91,7 @@ void GameEngine::update_physiology(Reptile& reptile, uint32_t delta_time) {
     
     // Calcul santé globale
     reptile.health.overall_health = (100 - reptile.health.hunger_level/2 + reptile.health.hydration - reptile.health.stress_level) / 2;
-    reptile.health.overall_health = std::max(0, std::min(100, reptile.health.overall_health));
+    reptile.health.overall_health = std::max(0U, std::min(100U, reptile.health.overall_health));
 }
 
 void GameEngine::update_behavior(Reptile& reptile) {
