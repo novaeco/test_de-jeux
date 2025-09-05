@@ -1,0 +1,25 @@
+# Configuration des composants pour ESP-IDF 5.5
+idf_component_register(
+    SRCS 
+        "main.cpp"
+        "game_engine.cpp" 
+        "reptile_species.cpp"
+        "ui_manager.cpp"
+        "save_system.cpp"
+        "display_driver.cpp"
+    INCLUDE_DIRS 
+        "."
+        "include"
+    REQUIRES 
+        lvgl
+        driver 
+        esp_timer 
+        nvs_flash 
+        spiffs
+        spi_flash
+        esp_lcd
+        esp_driver_spi
+        esp_driver_i2c
+        esp_driver_gpio
+        esp_driver_ledc
+)
