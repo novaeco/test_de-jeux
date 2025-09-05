@@ -62,7 +62,37 @@ const SpeciesData SPECIES_DATABASE[10] = {
         .difficulty_level = 1,
         .requires_cdc = false, .requires_authorization = false, .cites_appendix = "Non listée"
     },
-    
+
+    // Pantherophis guttatus – Serpent des blés
+    {
+        .scientific_name = "Pantherophis guttatus",
+        .common_name_fr  = "Serpent des blés",
+        .common_name_en  = "Corn Snake",
+        .environment = {
+            .temp_day_min = 26.0f, .temp_day_max = 30.0f,
+            .temp_night_min = 22.0f, .temp_night_max = 24.0f,
+            .humidity_min = 40.0f, .humidity_max = 60.0f,
+            .uvb_min = 2, .uvb_max = 4,
+            .photoperiod_summer = 14, .photoperiod_winter = 10,
+            .terrarium_min_size_L = 90, .terrarium_min_size_l = 45, .terrarium_min_size_h = 60
+        },
+        .biology = {
+            .adult_weight_min_g = 400, .adult_weight_max_g = 800,
+            .adult_length_min_mm = 900, .adult_length_max_mm = 1500,
+            .lifespan_years = 15, .sexual_maturity_months = 30,
+            .clutch_size_min = 10, .clutch_size_max = 30,
+            .incubation_days = 60, .incubation_temp_optimal = 28.5f
+        },
+        .diet = {
+            .is_carnivore = true, .is_herbivore = false, .is_insectivore = false,
+            .feeding_frequency_juvenile = 5, .feeding_frequency_adult = 14,
+            .preferred_foods = {FoodType::FROZEN_MICE_PINKIE, FoodType::FROZEN_MICE_FUZZY, FoodType::FROZEN_MICE_ADULT},
+            .needs_calcium_supplement = false, .needs_d3_supplement = false
+        },
+        .difficulty_level = 1,
+        .requires_cdc = false, .requires_authorization = false, .cites_appendix = "Non listée"
+    },
+
     // Python regius - Python royal
     {
         .scientific_name = "Python regius",
