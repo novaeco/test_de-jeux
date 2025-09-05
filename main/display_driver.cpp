@@ -117,11 +117,11 @@ bool DisplayDriver::configure_lcd_interface() {
     // Configuration du panel LCD générique
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = LCD_RST_PIN,
-        .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
+        .rgb_ele_order  = LCD_RGB_ELEMENT_ORDER_BGR,
+        .data_endian    = LCD_RGB_DATA_ENDIAN_LITTLE,
         .bits_per_pixel = LCD_BIT_PER_PIXEL,
-        .data_endian = LCD_RGB_DATA_ENDIAN_LITTLE,
-        .flags = 0,
-        .vendor_config = nullptr
+        .flags          = { .reset_active_high = 0 },
+        .vendor_config  = nullptr,
     };
     
     // Utiliser un driver LCD générique
