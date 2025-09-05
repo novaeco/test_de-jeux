@@ -390,3 +390,100 @@ void UIManager::hide_notification() {
     
     notification_visible = false;
 }
+
+void UIManager::on_humidity_adjust(lv_event_t* e) {
+    UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
+    lv_obj_t* slider = static_cast<lv_obj_t*>(lv_event_get_target(e));
+    int32_t value = lv_slider_get_value(slider);
+
+    uint8_t selected = ui->game_engine->get_selected_reptile();
+    if (ui->game_engine->adjust_humidity(selected, static_cast<float>(value))) {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "\xF0\x9F\x92\xA7 Humidit\xC3\xA9: %" PRId32 "%%", value);
+        ui->show_notification(msg, false);
+    }
+}
+
+void UIManager::on_navigation_click(lv_event_t* e) {
+    UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
+    lv_obj_t* btn = static_cast<lv_obj_t*>(lv_event_get_target(e));
+    uint8_t index = static_cast<uint8_t>((intptr_t)lv_obj_get_user_data(btn));
+    ui->switch_to_screen(index);
+}
+
+void UIManager::on_clean_terrarium(lv_event_t* e) {
+    UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
+    uint8_t selected = ui->game_engine->get_selected_reptile();
+    if (ui->game_engine->clean_terrarium(selected)) {
+        ui->show_notification("\xF0\x9F\xA7\xB9 Terrarium nettoy\xC3\xA9", false);
+    }
+}
+
+void UIManager::on_lighting_toggle(lv_event_t* e) {
+    UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
+    uint8_t selected = ui->game_engine->get_selected_reptile();
+    if (ui->game_engine->toggle_lighting(selected)) {
+        ui->show_notification("\xF0\x9F\x92\xA1 \xC3\x89clairage bascul\xC3\xA9", false);
+    }
+}
+
+void UIManager::on_health_check(lv_event_t* e) {
+    UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
+    uint8_t selected = ui->game_engine->get_selected_reptile();
+    if (ui->game_engine->diagnose_health_issue(selected)) {
+        ui->show_notification("\xF0\x9F\x8F\xA5 Bilan de sant\xC3\xA9 effectu\xC3\xA9", false);
+    }
+}
+
+void UIManager::update_environment_display(const Reptile& reptile) {
+    if (!environment_controls) return;
+
+    lv_obj_t* temp_container = lv_obj_get_child(environment_controls, 1);
+    lv_obj_t* temp_label = lv_obj_get_child(temp_container, 0);
+    lv_obj_t* temp_slider = lv_obj_get_child(temp_container, 1);
+
+    char buf[64];
+    snprintf(buf, sizeof(buf), "\xF0\x9F\x8C\xA1 Temp\xC3\xA9rature: %.0f\xC2\xB0C", reptile.habitat.temperature_day);
+    lv_label_set_text(temp_label, buf);
+    lv_slider_set_value(temp_slider, static_cast<int32_t>(reptile.habitat.temperature_day), LV_ANIM_OFF);
+
+    lv_obj_t* hum_container = lv_obj_get_child(environment_controls, 2);
+    lv_obj_t* hum_label = lv_obj_get_child(hum_container, 0);
+    lv_obj_t* hum_slider = lv_obj_get_child(hum_container, 1);
+
+    snprintf(buf, sizeof(buf), "\xF0\x9F\x92\xA7 Humidit\xC3\xA9: %.0f%%", reptile.habitat.humidity);
+    lv_label_set_text(hum_label, buf);
+    lv_slider_set_value(hum_slider, static_cast<int32_t>(reptile.habitat.humidity), LV_ANIM_OFF);
+}
+
+void UIManager::update_behavior_animation(const Reptile& reptile) {
+    if (!behavior_display) return;
+
+    const char* icon;
+    switch (reptile.current_behavior) {
+        case Behavior::BASKING:      icon = "\xE2\x98\x80\xEF\xB8\x8F Basking"; break;
+        case Behavior::HIDING:       icon = "\xF0\x9F\x95\xB5\xEF\xB8\x8F C\xE3\xA9ch\xC3\xA9"; break;
+        case Behavior::EXPLORING:    icon = "\xF0\x9F\x90\x8E Explore"; break;
+        case Behavior::FEEDING:      icon = "\xF0\x9F\x8D\xBD Mange"; break;
+        case Behavior::SLEEPING:     icon = "\xF0\x9F\x98\xB4 Dort"; break;
+        case Behavior::SHEDDING:     icon = "\xF0\x9F\xAA\xA0 Mue"; break;
+        case Behavior::COURTING:     icon = "\xF0\x9F\x92\x8F Parade"; break;
+        case Behavior::AGGRESSIVE:   icon = "\xF0\x9F\x98\xA1 Agressif"; break;
+        case Behavior::STRESSED:     icon = "\xF0\x9F\x98\xB1 Stress"; break;
+        case Behavior::BRUMATION:    icon = "\xE2\x9D\x84\xEF\xB8\x8F Brumation"; break;
+        default:                     icon = "\xE2\x9D\x93"; break;
+    }
+    lv_label_set_text(behavior_display, icon);
+}
+
+void UIManager::show_feeding_reminder(const char* reptile_name) {
+    char msg[128];
+    snprintf(msg, sizeof(msg), "\xF0\x9F\x8D\xBD Rappel: nourrir %s", reptile_name);
+    show_notification(msg, false);
+}
+
+void UIManager::show_health_alert(const char* reptile_name, const char* issue) {
+    char msg[128];
+    snprintf(msg, sizeof(msg), "\xE2\x9A\xA0\xEF\xB8\x8F %s: %s", reptile_name, issue);
+    show_notification(msg, true);
+}
