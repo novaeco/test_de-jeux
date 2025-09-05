@@ -35,7 +35,9 @@ private:
     lv_style_t style_health_critical;
     
     // État de l'interface
-    uint8_t current_screen_id;
+    static constexpr uint8_t screen_count = 7;
+    lv_obj_t* screens[screen_count];
+    uint8_t current_screen;
     bool notification_visible;
     uint32_t last_ui_update;
     
