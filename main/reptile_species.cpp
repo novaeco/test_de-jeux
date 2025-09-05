@@ -26,7 +26,7 @@ const SpeciesData SPECIES_DATABASE[10] = {
         .diet = {
             .is_carnivore = true, .is_herbivore = true, .is_insectivore = true,
             .feeding_frequency_juvenile = 1, .feeding_frequency_adult = 2,
-            .preferred_foods = {CRICKETS, DUBIA_ROACHES, LEAFY_GREENS, VEGETABLES, FRUITS},
+            .preferred_foods = {FoodType::CRICKETS, FoodType::DUBIA_ROACHES, FoodType::LEAFY_GREENS, FoodType::VEGETABLES, FoodType::FRUITS},
             .needs_calcium_supplement = true, .needs_d3_supplement = true
         },
         .difficulty_level = 2,
@@ -56,7 +56,7 @@ const SpeciesData SPECIES_DATABASE[10] = {
         .diet = {
             .is_carnivore = false, .is_herbivore = false, .is_insectivore = true,
             .feeding_frequency_juvenile = 1, .feeding_frequency_adult = 3,
-            .preferred_foods = {CRICKETS, MEALWORMS, DUBIA_ROACHES, WAXWORMS},
+            .preferred_foods = {FoodType::CRICKETS, FoodType::MEALWORMS, FoodType::DUBIA_ROACHES, FoodType::WAXWORMS},
             .needs_calcium_supplement = true, .needs_d3_supplement = false
         },
         .difficulty_level = 1,
@@ -86,7 +86,7 @@ const SpeciesData SPECIES_DATABASE[10] = {
         .diet = {
             .is_carnivore = true, .is_herbivore = false, .is_insectivore = false,
             .feeding_frequency_juvenile = 7, .feeding_frequency_adult = 21,
-            .preferred_foods = {FROZEN_MICE_PINKIE, FROZEN_MICE_FUZZY, FROZEN_MICE_ADULT},
+            .preferred_foods = {FoodType::FROZEN_MICE_PINKIE, FoodType::FROZEN_MICE_FUZZY, FoodType::FROZEN_MICE_ADULT},
             .needs_calcium_supplement = false, .needs_d3_supplement = false
         },
         .difficulty_level = 2,

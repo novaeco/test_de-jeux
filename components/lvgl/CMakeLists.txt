@@ -5,6 +5,7 @@ set(LVGL_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 file(GLOB_RECURSE SOURCES 
     "${LVGL_ROOT_DIR}/src/*.c"
     "${LVGL_ROOT_DIR}/*.c"
+    "${LVGL_ROOT_DIR}/lvgl/src/*.c"
 )
 
 # Exclusion des sources de test et démonstration
@@ -14,6 +15,8 @@ idf_component_register(
     SRCS ${SOURCES}
     INCLUDE_DIRS 
         "."
+        "lvgl/src"
+        "lvgl"
     REQUIRES 
         driver
         esp_timer
