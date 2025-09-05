@@ -5,9 +5,12 @@
 
 static const char* TAG = "UIManager";
 
-UIManager::UIManager(GameEngine* engine) 
-    : game_engine(engine), current_screen_id(SCREEN_MAIN), notification_visible(false) {
+UIManager::UIManager(GameEngine* engine)
+    : game_engine(engine), current_screen(SCREEN_MAIN), notification_visible(false) {
     last_ui_update = 0;
+    for (uint8_t i = 0; i < screen_count; ++i) {
+        screens[i] = nullptr;
+    }
 }
 
 UIManager::~UIManager() {
@@ -55,6 +58,7 @@ bool UIManager::initialize() {
 
 void UIManager::create_main_screen() {
     main_screen = lv_obj_create(NULL);
+    screens[SCREEN_MAIN] = main_screen;
     lv_obj_add_style(main_screen, &style_bg, 0);
     
     // Panneau principal - informations sur le reptile sélectionné
@@ -409,6 +413,12 @@ void UIManager::on_navigation_click(lv_event_t* e) {
     lv_obj_t* btn = static_cast<lv_obj_t*>(lv_event_get_target(e));
     uint8_t index = static_cast<uint8_t>((intptr_t)lv_obj_get_user_data(btn));
     ui->switch_to_screen(index);
+}
+
+void UIManager::switch_to_screen(uint8_t index) {
+    if (index >= screen_count || screens[index] == nullptr) return;
+    current_screen = index;
+    lv_scr_load_anim(screens[index], LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 }
 
 void UIManager::on_clean_terrarium(lv_event_t* e) {
