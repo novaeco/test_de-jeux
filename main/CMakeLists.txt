@@ -5,11 +5,6 @@ idf_component_register(
         "game_engine.cpp" 
         "reptile_species.cpp"
         "ui_manager.cpp"
-        "habitat_system.cpp"
-        "feeding_system.cpp"
-        "health_system.cpp"
-        "breeding_system.cpp"
-        "weather_system.cpp"
         "save_system.cpp"
         "display_driver.cpp"
     INCLUDE_DIRS 
