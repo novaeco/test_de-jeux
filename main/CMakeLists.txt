@@ -1,3 +1,4 @@
+# Configuration des composants pour ESP-IDF 5.5
 idf_component_register(
     SRCS 
         "main.cpp"
@@ -10,15 +11,20 @@ idf_component_register(
         "breeding_system.cpp"
         "weather_system.cpp"
         "save_system.cpp"
+        "display_driver.cpp"
     INCLUDE_DIRS 
         "."
         "include"
     REQUIRES 
-        lvgl 
+        lvgl
         driver 
         esp_timer 
         nvs_flash 
         spiffs
+        spi_flash
         esp_lcd
-        esp_lcd_touch
+        esp_driver_spi
+        esp_driver_i2c
+        esp_driver_gpio
+        esp_driver_ledc
 )

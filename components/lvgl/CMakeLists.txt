@@ -1,24 +1,28 @@
-# Configuration LVGL comme composant externe
+# Configuration LVGL pour ESP-IDF 5.5
+set(LVGL_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Recherche de tous les fichiers sources LVGL
+file(GLOB_RECURSE SOURCES 
+    "${LVGL_ROOT_DIR}/src/*.c"
+    "${LVGL_ROOT_DIR}/*.c"
+)
+
+# Exclusion des sources de test et démonstration
+list(FILTER SOURCES EXCLUDE REGEX ".*/(tests?|examples?|demos?)/.*")
 
 idf_component_register(
+    SRCS ${SOURCES}
     INCLUDE_DIRS 
         "."
         "src"
-    SRCS 
-        "lvgl.c"
     REQUIRES 
         driver
         esp_timer
+        esp_lcd
 )
 
-# Définir les macros de configuration LVGL
-target_compile_definitions(${COMPONENT_LIB} PRIVATE
+# Configuration des définitions pour LVGL
+target_compile_definitions(${COMPONENT_LIB} PUBLIC
     LV_CONF_PATH="${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.h"
-    LV_COLOR_DEPTH=16
-    LV_COLOR_16_SWAP=1
-    LV_MEM_SIZE=65536
-    LV_DISP_DEF_REFR_PERIOD=33
-    LV_INDEV_DEF_READ_PERIOD=10
-    LV_USE_PERF_MONITOR=1
-    LV_USE_MEM_MONITOR=1
+    LV_CONF_INCLUDE_SIMPLE=1
 )
