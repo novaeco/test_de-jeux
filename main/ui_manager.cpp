@@ -39,6 +39,12 @@ bool UIManager::initialize() {
     lv_style_set_bg_opa(&style_btn_primary, LV_OPA_COVER);
     lv_style_set_radius(&style_btn_primary, 8);
     lv_style_set_text_color(&style_btn_primary, lv_color_hex(0xECEFF4));
+
+    lv_style_init(&style_btn_secondary);
+    lv_style_set_bg_color(&style_btn_secondary, lv_color_hex(0x4C566A));   // gris secondaire
+    lv_style_set_bg_opa(&style_btn_secondary, LV_OPA_COVER);
+    lv_style_set_radius(&style_btn_secondary, 8);
+    lv_style_set_text_color(&style_btn_secondary, lv_color_hex(0xECEFF4));
     
     lv_style_init(&style_health_good);
     lv_style_set_bg_color(&style_health_good, lv_color_hex(0xA3BE8C));
