@@ -5,6 +5,7 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_log.h"
+#include "esp_err.h"
 #include "nvs_flash.h"
 #include "esp_timer.h"
 
@@ -112,7 +113,10 @@ static void initialize_system() {
     initialize_nvs();
     
     // Configuration de l'horloge système pour la précision temporelle
-    esp_timer_init();
+    esp_err_t timer_ret = esp_timer_init();
+    if (timer_ret != ESP_OK && timer_ret != ESP_ERR_INVALID_STATE) {
+        ESP_LOGE(TAG, "esp_timer_init failed: %s", esp_err_to_name(timer_ret));
+    }
     
     // Log des informations système
     esp_chip_info_t chip_info;
