@@ -4,6 +4,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_heap_caps.h"
 
 static const char* TAG = "DisplayDriver";
 
@@ -20,10 +21,10 @@ DisplayDriver::~DisplayDriver() {
         esp_lcd_panel_del(panel_handle);
     }
     if (buf1) {
-        free(buf1);
+        heap_caps_free(buf1);
     }
     if (buf2) {
-        free(buf2);
+        heap_caps_free(buf2);
     }
 }
 
@@ -141,12 +142,27 @@ bool DisplayDriver::configure_lvgl() {
     
     // Allocation des buffers
     size_t buffer_size = LCD_WIDTH * 60; // 60 lignes de buffer
-    buf1 = (lv_color_t*)malloc(buffer_size * sizeof(lv_color_t));
-    buf2 = (lv_color_t*)malloc(buffer_size * sizeof(lv_color_t));
-    
+    buf1 = (lv_color_t*)heap_caps_malloc(
+               buffer_size * sizeof(lv_color_t),
+               MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+    buf2 = (lv_color_t*)heap_caps_malloc(
+               buffer_size * sizeof(lv_color_t),
+               MALLOC_CAP_SPIRAM | MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+
     if (!buf1 || !buf2) {
-        ESP_LOGE(TAG, "Échec allocation buffers LVGL");
-        return false;
+        // Fallback : réduire la hauteur du buffer à 30 lignes en RAM interne
+        size_t small_size = LCD_WIDTH * 30;
+        if (buf1) heap_caps_free(buf1);
+        if (buf2) heap_caps_free(buf2);
+        buf1 = (lv_color_t*)heap_caps_malloc(
+                   small_size * sizeof(lv_color_t), MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+        buf2 = (lv_color_t*)heap_caps_malloc(
+                   small_size * sizeof(lv_color_t), MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+        if (!buf1 || !buf2) {
+            ESP_LOGE(TAG, "Échec allocation buffers LVGL");
+            return false;
+        }
+        buffer_size = small_size;
     }
     
     // Création du display LVGL
