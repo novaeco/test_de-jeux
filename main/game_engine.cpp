@@ -75,11 +75,15 @@ void GameEngine::update_physiology(Reptile& reptile, uint32_t delta_time) {
     
     // Mise à jour de la faim basée sur le métabolisme de l'espèce
     if (time_since_feeding > feeding_interval) {
-        reptile.health.hunger_level = std::min(100U, reptile.health.hunger_level + (uint8_t)(delta_time / 3600000)); // +1 par heure
+        reptile.health.hunger_level =
+            std::min<uint8_t>(100, reptile.health.hunger_level +
+                                      static_cast<uint8_t>(delta_time / 3600000));
     }
-    
+
     // Déshydratation graduelle
-    reptile.health.hydration = std::max(0U, reptile.health.hydration - (uint8_t)(delta_time / 7200000)); // -1 toutes les 2h
+    reptile.health.hydration =
+        std::max<uint8_t>(0, reptile.health.hydration -
+                              static_cast<uint8_t>(delta_time / 7200000));
     
     // Impact environnemental sur la santé
     uint8_t env_quality = calculate_health_impact(reptile, reptile.habitat);
@@ -90,8 +94,12 @@ void GameEngine::update_physiology(Reptile& reptile, uint32_t delta_time) {
     }
     
     // Calcul santé globale
-    reptile.health.overall_health = (100 - reptile.health.hunger_level/2 + reptile.health.hydration - reptile.health.stress_level) / 2;
-    reptile.health.overall_health = std::max(0U, std::min(100U, reptile.health.overall_health));
+    reptile.health.overall_health =
+        (100 - reptile.health.hunger_level / 2 + reptile.health.hydration -
+         reptile.health.stress_level) /
+        2;
+    reptile.health.overall_health =
+        std::clamp<uint8_t>(reptile.health.overall_health, 0, 100);
 }
 
 void GameEngine::update_behavior(Reptile& reptile) {
