@@ -113,9 +113,8 @@ static void initialize_system() {
     initialize_nvs();
     
     // Configuration de l'horloge système pour la précision temporelle
-    esp_err_t timer_ret = esp_timer_init();
-    if (timer_ret != ESP_OK && timer_ret != ESP_ERR_INVALID_STATE) {
-        ESP_LOGE(TAG, "esp_timer_init failed: %s", esp_err_to_name(timer_ret));
+    if (esp_timer_init() != ESP_ERR_INVALID_STATE) {
+        ESP_LOGI(TAG, "Timer initialisé");
     }
     
     // Log des informations système
