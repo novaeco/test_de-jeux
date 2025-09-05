@@ -1,0 +1,24 @@
+idf_component_register(
+    SRCS 
+        "main.cpp"
+        "game_engine.cpp" 
+        "reptile_species.cpp"
+        "ui_manager.cpp"
+        "habitat_system.cpp"
+        "feeding_system.cpp"
+        "health_system.cpp"
+        "breeding_system.cpp"
+        "weather_system.cpp"
+        "save_system.cpp"
+    INCLUDE_DIRS 
+        "."
+        "include"
+    REQUIRES 
+        lvgl 
+        driver 
+        esp_timer 
+        nvs_flash 
+        spiffs
+        esp_lcd
+        esp_lcd_touch
+)
