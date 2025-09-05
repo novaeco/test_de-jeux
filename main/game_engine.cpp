@@ -69,7 +69,9 @@ bool GameEngine::add_reptile(ReptileSpecies species, const char *name) {
   new_reptile.experience_points = 0;
 
   reptiles.push_back(new_reptile);
-  ESP_LOGI(TAG, "Nouveau reptile ajouté: %s (%s)", name, data.scientific_name);
+  const char *sci = data.scientific_name ? data.scientific_name : "Inconnu";
+  ESP_LOGI(TAG, "Nouveau reptile ajouté: %s (%s)",
+           name ? name : "Sans nom", sci);
   return true;
 }
 
