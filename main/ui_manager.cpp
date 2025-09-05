@@ -168,7 +168,7 @@ void UIManager::create_environment_controls() {
     lv_obj_clear_flag(temp_container, LV_OBJ_FLAG_SCROLLABLE);
     
     lv_obj_t* temp_label = lv_label_create(temp_container);
-    lv_label_set_text(temp_label, "🌡️ Température: 30°C");
+    lv_label_set_text(temp_label, u8"\U0001F321\U0000FE0F Température: 30°C");
     lv_obj_set_style_text_color(temp_label, lv_color_hex(0xD8DEE9), 0);
     
     lv_obj_t* temp_slider = lv_slider_create(temp_container);
@@ -185,7 +185,7 @@ void UIManager::create_environment_controls() {
     lv_obj_clear_flag(hum_container, LV_OBJ_FLAG_SCROLLABLE);
     
     lv_obj_t* hum_label = lv_label_create(hum_container);
-    lv_label_set_text(hum_label, "💧 Humidité: 60%");
+    lv_label_set_text(hum_label, u8"\U0001F4A7 Humidité: 60%");
     lv_obj_set_style_text_color(hum_label, lv_color_hex(0xD8DEE9), 0);
     
     lv_obj_t* hum_slider = lv_slider_create(hum_container);
@@ -203,12 +203,12 @@ void UIManager::create_feeding_interface() {
     lv_obj_set_pos(feeding_panel, 420, 240);
     
     lv_obj_t* title = lv_label_create(feeding_panel);
-    lv_label_set_text(title, "🍽️ Alimentation");
+    lv_label_set_text(title, u8"\U0001F37D\U0000FE0F Alimentation");
     lv_obj_set_style_text_font(title, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(title, lv_color_hex(0xECEFF4), 0);
     
     // Boutons de nourriture spécifique
-    const char* food_names[] = {"🦗 Grillons", "🪱 Vers", "🥬 Légumes", "🧬 Compléments"};
+    const char* food_names[] = {u8"\U0001F997 Grillons", u8"\U0001FAB1 Vers", u8"\U0001F96C Légumes", u8"\U0001F9EC Compléments"};
     FoodType food_types[] = {FoodType::CRICKETS, FoodType::MEALWORMS, FoodType::LEAFY_GREENS, FoodType::CALCIUM_SUPPLEMENT};
     
     for (int i = 0; i < 4; i++) {
@@ -236,7 +236,7 @@ void UIManager::create_feeding_interface() {
 
 void UIManager::create_care_buttons() {
     // Boutons de soins rapides en bas de l'écran
-    const char* care_labels[] = {"🧹 Nettoyer", "💡 Éclairage", "🏥 Santé", "👥 Reproduction"};
+    const char* care_labels[] = {u8"\U0001F9F9 Nettoyer", u8"\U0001F4A1 Éclairage", u8"\U0001F3E5 Santé", u8"\U0001F465 Reproduction"};
     lv_event_cb_t callbacks[] = {on_clean_terrarium, on_lighting_toggle, on_health_check, nullptr};
     
     for (int i = 0; i < 4; i++) {
@@ -263,7 +263,7 @@ void UIManager::create_navigation_menu() {
     lv_obj_set_style_bg_color(nav_menu, lv_color_hex(0x2E3440), 0);
     lv_obj_set_style_border_width(nav_menu, 0, 0);
     
-    const char* nav_labels[] = {"🏠 Accueil", "🦎 Reptiles", "⚙️ Habitat", "📊 Stats", "⚙️ Paramètres"};
+    const char* nav_labels[] = {u8"\U0001F3E0 Accueil", u8"\U0001F98E Reptiles", u8"\U00002699\U0000FE0F Habitat", u8"\U0001F4CA Stats", u8"\U00002699\U0000FE0F Paramètres"};
     
     for (int i = 0; i < 5; i++) {
         lv_obj_t* nav_btn = lv_btn_create(nav_menu);
@@ -290,10 +290,10 @@ void UIManager::on_feed_button(lv_event_t* e) {
     
     uint8_t selected = ui->game_engine->get_selected_reptile();
     if (ui->game_engine->feed_reptile(selected, food)) {
-        ui->show_notification("✅ Alimentation réussie!", false);
+        ui->show_notification(u8"\u2705 Alimentation réussie!", false);
         ui->animate_feeding(btn);
     } else {
-        ui->show_notification("❌ Nourriture inappropriée", true);
+        ui->show_notification(u8"\u274C Nourriture inappropriée", true);
     }
 }
 
@@ -305,7 +305,7 @@ void UIManager::on_temperature_adjust(lv_event_t* e) {
     uint8_t selected = ui->game_engine->get_selected_reptile();
     if (ui->game_engine->adjust_temperature(selected, (float)value)) {
         char msg[64];
-        snprintf(msg, sizeof(msg), "🌡️ Température: %" PRId32 "°C", value);
+        snprintf(msg, sizeof(msg), u8"\U0001F321\U0000FE0F Température: %" PRId32 "°C", value);
         ui->show_notification(msg, false);
     }
 }
@@ -403,7 +403,7 @@ void UIManager::on_humidity_adjust(lv_event_t* e) {
     uint8_t selected = ui->game_engine->get_selected_reptile();
     if (ui->game_engine->adjust_humidity(selected, static_cast<float>(value))) {
         char msg[64];
-        snprintf(msg, sizeof(msg), "\xF0\x9F\x92\xA7 Humidit\xC3\xA9: %" PRId32 "%%", value);
+        snprintf(msg, sizeof(msg), u8"\U0001F4A7 Humidité: %" PRId32 "%%", value);
         ui->show_notification(msg, false);
     }
 }
@@ -425,7 +425,7 @@ void UIManager::on_clean_terrarium(lv_event_t* e) {
     UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
     uint8_t selected = ui->game_engine->get_selected_reptile();
     if (ui->game_engine->clean_terrarium(selected)) {
-        ui->show_notification("\xF0\x9F\xA7\xB9 Terrarium nettoy\xC3\xA9", false);
+        ui->show_notification(u8"\U0001F9F9 Terrarium nettoyé", false);
     }
 }
 
@@ -433,7 +433,7 @@ void UIManager::on_lighting_toggle(lv_event_t* e) {
     UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
     uint8_t selected = ui->game_engine->get_selected_reptile();
     if (ui->game_engine->toggle_lighting(selected)) {
-        ui->show_notification("\xF0\x9F\x92\xA1 \xC3\x89clairage bascul\xC3\xA9", false);
+        ui->show_notification(u8"\U0001F4A1 Éclairage basculé", false);
     }
 }
 
@@ -441,7 +441,7 @@ void UIManager::on_health_check(lv_event_t* e) {
     UIManager* ui = static_cast<UIManager*>(lv_event_get_user_data(e));
     uint8_t selected = ui->game_engine->get_selected_reptile();
     if (ui->game_engine->diagnose_health_issue(selected)) {
-        ui->show_notification("\xF0\x9F\x8F\xA5 Bilan de sant\xC3\xA9 effectu\xC3\xA9", false);
+        ui->show_notification(u8"\U0001F3E5 Bilan de santé effectué", false);
     }
 }
 
@@ -453,7 +453,7 @@ void UIManager::update_environment_display(const Reptile& reptile) {
     lv_obj_t* temp_slider = lv_obj_get_child(temp_container, 1);
 
     char buf[64];
-    snprintf(buf, sizeof(buf), "\xF0\x9F\x8C\xA1 Temp\xC3\xA9rature: %.0f\xC2\xB0C", reptile.habitat.temperature_day);
+    snprintf(buf, sizeof(buf), u8"\U0001F321\U0000FE0F Température: %.0f°C", reptile.habitat.temperature_day);
     lv_label_set_text(temp_label, buf);
     lv_slider_set_value(temp_slider, static_cast<int32_t>(reptile.habitat.temperature_day), LV_ANIM_OFF);
 
@@ -461,7 +461,7 @@ void UIManager::update_environment_display(const Reptile& reptile) {
     lv_obj_t* hum_label = lv_obj_get_child(hum_container, 0);
     lv_obj_t* hum_slider = lv_obj_get_child(hum_container, 1);
 
-    snprintf(buf, sizeof(buf), "\xF0\x9F\x92\xA7 Humidit\xC3\xA9: %.0f%%", reptile.habitat.humidity);
+    snprintf(buf, sizeof(buf), u8"\U0001F4A7 Humidité: %.0f%%", reptile.habitat.humidity);
     lv_label_set_text(hum_label, buf);
     lv_slider_set_value(hum_slider, static_cast<int32_t>(reptile.habitat.humidity), LV_ANIM_OFF);
 }
@@ -471,29 +471,29 @@ void UIManager::update_behavior_animation(const Reptile& reptile) {
 
     const char* icon;
     switch (reptile.current_behavior) {
-        case Behavior::BASKING:      icon = "\xE2\x98\x80\xEF\xB8\x8F Basking"; break;
-        case Behavior::HIDING:       icon = "\xF0\x9F\x95\xB5\xEF\xB8\x8F C\xE3\xA9ch\xC3\xA9"; break;
-        case Behavior::EXPLORING:    icon = "\xF0\x9F\x90\x8E Explore"; break;
-        case Behavior::FEEDING:      icon = "\xF0\x9F\x8D\xBD Mange"; break;
-        case Behavior::SLEEPING:     icon = "\xF0\x9F\x98\xB4 Dort"; break;
-        case Behavior::SHEDDING:     icon = "\xF0\x9F\xAA\xA0 Mue"; break;
-        case Behavior::COURTING:     icon = "\xF0\x9F\x92\x8F Parade"; break;
-        case Behavior::AGGRESSIVE:   icon = "\xF0\x9F\x98\xA1 Agressif"; break;
-        case Behavior::STRESSED:     icon = "\xF0\x9F\x98\xB1 Stress"; break;
-        case Behavior::BRUMATION:    icon = "\xE2\x9D\x84\xEF\xB8\x8F Brumation"; break;
-        default:                     icon = "\xE2\x9D\x93"; break;
+        case Behavior::BASKING:      icon = u8"\u2600\uFE0F Basking"; break;
+        case Behavior::HIDING:       icon = u8"\U0001F575\uFE0F Caché"; break;
+        case Behavior::EXPLORING:    icon = u8"\U0001F40E Explore"; break;
+        case Behavior::FEEDING:      icon = u8"\U0001F35D Mange"; break;
+        case Behavior::SLEEPING:     icon = u8"\U0001F634 Dort"; break;
+        case Behavior::SHEDDING:     icon = u8"\U0001FAA0 Mue"; break;
+        case Behavior::COURTING:     icon = u8"\U0001F48F Parade"; break;
+        case Behavior::AGGRESSIVE:   icon = u8"\U0001F621 Agressif"; break;
+        case Behavior::STRESSED:     icon = u8"\U0001F631 Stress"; break;
+        case Behavior::BRUMATION:    icon = u8"\u2744\uFE0F Brumation"; break;
+        default:                     icon = u8"\u2753"; break;
     }
     lv_label_set_text(behavior_display, icon);
 }
 
 void UIManager::show_feeding_reminder(const char* reptile_name) {
     char msg[128];
-    snprintf(msg, sizeof(msg), "\xF0\x9F\x8D\xBD Rappel: nourrir %s", reptile_name);
+    snprintf(msg, sizeof(msg), u8"\U0001F35D Rappel: nourrir %s", reptile_name);
     show_notification(msg, false);
 }
 
 void UIManager::show_health_alert(const char* reptile_name, const char* issue) {
     char msg[128];
-    snprintf(msg, sizeof(msg), "\xE2\x9A\xA0\xEF\xB8\x8F %s: %s", reptile_name, issue);
+    snprintf(msg, sizeof(msg), u8"\u26A0\uFE0F %s: %s", reptile_name, issue);
     show_notification(msg, true);
 }
