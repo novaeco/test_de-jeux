@@ -14,7 +14,6 @@ idf_component_register(
     SRCS ${SOURCES}
     INCLUDE_DIRS 
         "."
-        "src"
     REQUIRES 
         driver
         esp_timer
