@@ -5,6 +5,7 @@
 #include "include/species_database.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 static const char *TAG = "GameEngine";
 
@@ -346,4 +347,74 @@ void GameEngine::select_reptile(uint8_t index) {
 
 uint8_t GameEngine::get_selected_reptile() const {
   return selected_reptile_index;
+}
+
+bool GameEngine::remove_reptile(uint8_t index) {
+  if (index >= reptiles.size()) {
+    return false;
+  }
+
+  reptiles.erase(reptiles.begin() + index);
+  if (selected_reptile_index >= reptiles.size()) {
+    selected_reptile_index = reptiles.empty() ? 0 : reptiles.size() - 1;
+  }
+  return true;
+}
+
+bool GameEngine::handle_reptile(uint8_t index) {
+  if (index >= reptiles.size()) {
+    return false;
+  }
+
+  Reptile &reptile = reptiles[index];
+  if (reptile.health.stress_level > 0) {
+    reptile.health.stress_level -= 1;
+  }
+  reptile.experience_points += 1;
+  return true;
+}
+
+bool GameEngine::can_breed(uint8_t female_index, uint8_t male_index) {
+  if (female_index >= reptiles.size() || male_index >= reptiles.size()) {
+    return false;
+  }
+  return false; // Système de reproduction non implémenté
+}
+
+bool GameEngine::initiate_breeding(uint8_t female_index, uint8_t male_index) {
+  (void)female_index;
+  (void)male_index;
+  return false; // Fonctionnalité non disponible
+}
+
+bool GameEngine::treat_health_issue(uint8_t index, const char *treatment) {
+  if (index >= reptiles.size() || treatment == nullptr) {
+    return false;
+  }
+
+  Reptile &reptile = reptiles[index];
+  reptile.health.overall_health =
+      std::min<uint8_t>(100, reptile.health.overall_health + 5);
+  reptile.experience_points += 2;
+  return true;
+}
+
+uint32_t GameEngine::get_total_experience() const {
+  uint32_t total = 0;
+  for (const auto &r : reptiles) {
+    total += r.experience_points;
+  }
+  return total;
+}
+
+uint8_t GameEngine::get_keeper_level() const {
+  return static_cast<uint8_t>(get_total_experience() / 100);
+}
+
+bool GameEngine::save_game_state() {
+  return true;
+}
+
+bool GameEngine::load_game_state() {
+  return true;
 }
