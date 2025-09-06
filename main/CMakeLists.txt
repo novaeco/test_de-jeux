@@ -18,8 +18,6 @@ idf_component_register(
         spiffs
         spi_flash
         esp_lcd
-        esp_driver_spi
         esp_driver_i2c
         esp_driver_gpio
-        esp_driver_ledc
 )
