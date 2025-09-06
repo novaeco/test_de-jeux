@@ -107,8 +107,6 @@ bool DisplayDriver::configure_lcd_interface() {
     panel_config.disp_gpio_num     = -1;
     panel_config.num_fbs           = 1;
     panel_config.bounce_buffer_size_px = 0;
-    panel_config.sram_trans_align  = 0;
-    panel_config.psram_trans_align = 64;
     panel_config.flags.fb_in_psram = 1;
 
     ESP_ERROR_CHECK(esp_lcd_new_rgb_panel(&panel_config, &panel_handle));
