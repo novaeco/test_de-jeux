@@ -72,11 +72,11 @@ public:
     
     // Statistiques
     struct SaveStats {
-        uint32_t total_saves = 0;
-        uint32_t successful_saves = 0;
-        uint32_t failed_saves = 0;
-        uint32_t last_save_duration_ms = 0;
-        size_t save_data_size = 0;
+        uint32_t total_saves{0};
+        uint32_t successful_saves{0};
+        uint32_t failed_saves{0};
+        uint32_t last_save_duration_ms{0};
+        size_t save_data_size{0};
     };
 
     SaveStats statistics{};
