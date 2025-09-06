@@ -1,12 +1,19 @@
 #include "include/display_driver.h"
-#include "esp_lcd_panel_vendor.h"
-#include "esp_lcd_panel_io.h"
+#include "esp_lcd_panel_rgb.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_heap_caps.h"
 
 static const char* TAG = "DisplayDriver";
+
+#define CH422_ADDR 0x40
+
+static esp_err_t exio_set_level(uint8_t exio, int level) {
+    uint8_t cmd[2] = { static_cast<uint8_t>(0x70 | ((exio & 0x06) << 1)),
+                       static_cast<uint8_t>(level ? (1 << (exio & 0x07)) : 0) };
+    return i2c_master_write_to_device(I2C_NUM_0, CH422_ADDR, cmd, sizeof(cmd), pdMS_TO_TICKS(100));
+}
 
 // Buffers LVGL statiques
 lv_display_t* DisplayDriver::lvgl_display = nullptr;
@@ -31,29 +38,21 @@ DisplayDriver::~DisplayDriver() {
 bool DisplayDriver::initialize() {
     ESP_LOGI(TAG, "Initialisation du pilote d'affichage Waveshare ESP32-S3 7\"");
     
-    // Configuration du rétroéclairage PWM
-    ledc_timer_config_t ledc_timer = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_10_BIT,
-        .timer_num = LEDC_TIMER_0,
-        .freq_hz = 1000,
-        .clk_cfg = LEDC_AUTO_CLK,
-        .deconfigure = false
+    // Initialisation expander pour rétroéclairage et alimentation
+    i2c_config_t i2c_conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = TOUCH_SDA_PIN,
+        .scl_io_num = TOUCH_SCL_PIN,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master = { .clk_speed = 100000 },
+        .clk_flags = 0,
     };
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
-    
-    ledc_channel_config_t ledc_channel = {
-        .gpio_num = LCD_BL_PIN,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = LEDC_CHANNEL_0,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = LEDC_TIMER_0,
-        .duty = 0,
-        .hpoint = 0,
-        .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
-        .flags = 0
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
+    ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &i2c_conf));
+    ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, i2c_conf.mode, 0, 0, 0));
+
+    // Activer l'alimentation LCD via EXIO6
+    exio_set_level(LCD_VDD_EN_EXIO, 1);
     
     // Configuration des interfaces
     if (!configure_lcd_interface()) {
@@ -66,73 +65,53 @@ bool DisplayDriver::initialize() {
         return false;
     }
     
-    // Activer le rétroéclairage à 80%
-    set_brightness(80);
+    // Activer le rétroéclairage
+    set_brightness(100);
     
     ESP_LOGI(TAG, "Pilote d'affichage initialisé avec succès");
     return true;
 }
 
 bool DisplayDriver::configure_lcd_interface() {
-    // Configuration SPI pour le LCD
-    spi_bus_config_t buscfg = {
-        .mosi_io_num = LCD_MOSI_PIN,
-        .miso_io_num = LCD_MISO_PIN,
-        .sclk_io_num = LCD_SCLK_PIN,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = LCD_WIDTH * LCD_HEIGHT * sizeof(uint16_t),
-        .flags = 0,
-        .isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO,
-        .intr_flags = 0,
+    esp_lcd_rgb_panel_config_t panel_config = {
+        .data_width = 24,
+        .psram_trans_align = 64,
+        .num_fbs = 1,
+        .clk_src = LCD_CLK_SRC_DEFAULT,
+        .timings = {
+            .pclk_hz = 12000000,
+            .h_res = LCD_WIDTH,
+            .v_res = LCD_HEIGHT,
+            .hsync_pulse_width = 10,
+            .hsync_back_porch = 20,
+            .hsync_front_porch = 10,
+            .vsync_pulse_width = 2,
+            .vsync_back_porch = 8,
+            .vsync_front_porch = 4,
+            .flags = {
+                .hsync_idle_low = 0,
+                .vsync_idle_low = 0,
+                .de_idle_high = 0,
+                .pclk_active_neg = 0,
+            },
+        },
+        .hsync_gpio_num = LCD_PIN_HSYNC,
+        .vsync_gpio_num = LCD_PIN_VSYNC,
+        .de_gpio_num = LCD_PIN_DE,
+        .pclk_gpio_num = LCD_PIN_PCLK,
+        .disp_gpio_num = -1,
+        .data_gpio_nums = {
+            LCD_PIN_R0, LCD_PIN_R1, LCD_PIN_R2, LCD_PIN_R3, LCD_PIN_R4, LCD_PIN_R5, LCD_PIN_R6, LCD_PIN_R7,
+            LCD_PIN_G0, LCD_PIN_G1, LCD_PIN_G2, LCD_PIN_G3, LCD_PIN_G4, LCD_PIN_G5, LCD_PIN_G6, LCD_PIN_G7,
+            LCD_PIN_B0, LCD_PIN_B1, LCD_PIN_B2, LCD_PIN_B3, LCD_PIN_B4, LCD_PIN_B5, LCD_PIN_B6, LCD_PIN_B7,
+        },
+        .flags = { .fb_in_psram = 1 },
     };
-    
-    ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
-    
-    esp_lcd_panel_io_spi_config_t io_config = {
-        .cs_gpio_num = LCD_CS_PIN,
-        .dc_gpio_num = LCD_DC_PIN,
-        .spi_mode = 0,
-        .pclk_hz = 40 * 1000 * 1000, // 40MHz
-        .trans_queue_depth = 10,
-        .on_color_trans_done = nullptr,
-        .user_ctx = nullptr,
-        .lcd_cmd_bits = 8,
-        .lcd_param_bits = 8,
-        .cs_ena_pretrans = 0,
-        .cs_ena_posttrans = 0,
-        .flags = {
-            .dc_high_on_cmd = 0,
-            .dc_low_on_data = 0,
-            .dc_low_on_param = 0,
-            .octal_mode = 0,
-            .quad_mode = 0,
-            .sio_mode = 0,
-            .lsb_first = 0
-        }
-    };
-    
-    esp_lcd_panel_io_handle_t io_handle = nullptr;
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)SPI2_HOST, &io_config, &io_handle));
-    
-    // Configuration du panel LCD générique
-    esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = LCD_RST_PIN,
-        .rgb_ele_order  = LCD_RGB_ELEMENT_ORDER_BGR,
-        .data_endian    = LCD_RGB_DATA_ENDIAN_LITTLE,
-        .bits_per_pixel = LCD_BIT_PER_PIXEL,
-        .flags          = { .reset_active_high = 0 },
-        .vendor_config  = nullptr,
-    };
-    
-    // Utiliser un driver LCD générique
-    ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle));
+
+    ESP_ERROR_CHECK(esp_lcd_new_rgb_panel(&panel_config, &panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
-    ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, false));
-    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
-    
     return true;
 }
 
@@ -202,11 +181,8 @@ void DisplayDriver::lvgl_touch_cb(lv_indev_t* indev, lv_indev_data_t* data) {
 }
 
 void DisplayDriver::set_brightness(uint8_t brightness) {
-    uint32_t duty = (brightness * 1023) / 100; // Convertir en valeur 10-bit
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0));
-    
-    ESP_LOGI(TAG, "Luminosité réglée à %d%%", brightness);
+    exio_set_level(LCD_BL_EXIO, brightness ? 1 : 0);
+    ESP_LOGI(TAG, "Rétroéclairage %s", brightness ? "activé" : "désactivé");
 }
 
 void DisplayDriver::update() {
