@@ -51,7 +51,8 @@
 #define TOUCH_SDA_PIN       GPIO_NUM_8
 #define TOUCH_SCL_PIN       GPIO_NUM_9
 #define TOUCH_INT_PIN       GPIO_NUM_4
-#define TOUCH_RST_PIN       GPIO_NUM_NC
+#define TOUCH_RST_PIN       GPIO_NUM_NC  // Reset via expander
+#define TOUCH_RST_EXIO      1           // EXIO1 : reset tactile
 
 class DisplayDriver {
 private:
@@ -61,6 +62,7 @@ private:
     static lv_display_t* lvgl_display;
     static lv_color_t* buf1;
     static lv_color_t* buf2;
+    static lv_indev_t* touch_indev;
     
     // Driver callbacks
     static void lvgl_flush_cb(lv_display_t* display, const lv_area_t* area, uint8_t* color_map);

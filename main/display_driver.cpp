@@ -8,6 +8,7 @@
 static const char* TAG = "DisplayDriver";
 
 #define CH422_ADDR 0x40
+#define FT5X06_ADDR 0x38
 
 static esp_err_t exio_set_level(uint8_t exio, int level) {
     uint8_t cmd[2] = { static_cast<uint8_t>(0x70 | ((exio & 0x06) << 1)),
@@ -15,10 +16,15 @@ static esp_err_t exio_set_level(uint8_t exio, int level) {
     return i2c_master_write_to_device(I2C_NUM_0, CH422_ADDR, cmd, sizeof(cmd), pdMS_TO_TICKS(100));
 }
 
+static esp_err_t ft5x06_read(uint8_t reg, uint8_t* data, size_t len) {
+    return i2c_master_write_read_device(I2C_NUM_0, FT5X06_ADDR, &reg, 1, data, len, pdMS_TO_TICKS(100));
+}
+
 // Buffers LVGL statiques
 lv_display_t* DisplayDriver::lvgl_display = nullptr;
 lv_color_t* DisplayDriver::buf1 = nullptr;
 lv_color_t* DisplayDriver::buf2 = nullptr;
+lv_indev_t* DisplayDriver::touch_indev = nullptr;
 
 DisplayDriver::DisplayDriver() : panel_handle(nullptr) {
 }
@@ -37,37 +43,28 @@ DisplayDriver::~DisplayDriver() {
 
 bool DisplayDriver::initialize() {
     ESP_LOGI(TAG, "Initialisation du pilote d'affichage Waveshare ESP32-S3 7\"");
-    
-    // Initialisation expander pour rétroéclairage et alimentation
-    i2c_config_t i2c_conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = TOUCH_SDA_PIN,
-        .scl_io_num = TOUCH_SCL_PIN,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = { .clk_speed = 100000 },
-        .clk_flags = 0,
-    };
-    ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &i2c_conf));
-    ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, i2c_conf.mode, 0, 0, 0));
 
-    // Activer l'alimentation LCD via EXIO6
+    lv_init();
+
+    if (!configure_touch_interface()) {
+        ESP_LOGE(TAG, "Échec configuration tactile");
+        return false;
+    }
+
     exio_set_level(LCD_VDD_EN_EXIO, 1);
-    
-    // Configuration des interfaces
+
     if (!configure_lcd_interface()) {
         ESP_LOGE(TAG, "Échec configuration LCD");
         return false;
     }
-    
+
     if (!configure_lvgl()) {
         ESP_LOGE(TAG, "Échec configuration LVGL");
         return false;
     }
-    
-    // Activer le rétroéclairage
+
     set_brightness(100);
-    
+
     ESP_LOGI(TAG, "Pilote d'affichage initialisé avec succès");
     return true;
 }
@@ -115,10 +112,42 @@ bool DisplayDriver::configure_lcd_interface() {
     return true;
 }
 
+bool DisplayDriver::configure_touch_interface() {
+    i2c_config_t i2c_conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = TOUCH_SDA_PIN,
+        .scl_io_num = TOUCH_SCL_PIN,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master = { .clk_speed = 100000 },
+        .clk_flags = 0,
+    };
+    ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &i2c_conf));
+    ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, i2c_conf.mode, 0, 0, 0));
+
+    // Reset du contrôleur tactile via l'expander
+    exio_set_level(TOUCH_RST_EXIO, 0);
+    vTaskDelay(pdMS_TO_TICKS(10));
+    exio_set_level(TOUCH_RST_EXIO, 1);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    uint8_t reg = 0xA8; // registre ID
+    uint8_t id = 0;
+    if (ft5x06_read(reg, &id, 1) != ESP_OK) {
+        ESP_LOGE(TAG, "FT5x06 non détecté");
+        return false;
+    }
+    ESP_LOGI(TAG, "Contrôleur tactile ID: 0x%02X", id);
+
+    touch_indev = lv_indev_create();
+    lv_indev_set_type(touch_indev, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(touch_indev, lvgl_touch_cb);
+    lv_indev_set_user_data(touch_indev, this);
+
+    return true;
+}
+
 bool DisplayDriver::configure_lvgl() {
-    // Initialisation LVGL
-    lv_init();
-    
     // Allocation des buffers
     size_t buffer_size = LCD_WIDTH * 60; // 60 lignes de buffer
     buf1 = (lv_color_t*)heap_caps_malloc(
@@ -149,13 +178,11 @@ bool DisplayDriver::configure_lvgl() {
     lv_display_set_flush_cb(lvgl_display, lvgl_flush_cb);
     lv_display_set_buffers(lvgl_display, buf1, buf2, buffer_size * sizeof(lv_color_t), LV_DISPLAY_RENDER_MODE_PARTIAL);
     lv_display_set_user_data(lvgl_display, this);
-    
-    // Configuration du périphérique d'entrée tactile (simulé pour l'instant)
-    lv_indev_t* indev = lv_indev_create();
-    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-    lv_indev_set_read_cb(indev, lvgl_touch_cb);
-    lv_indev_set_user_data(indev, this);
-    
+
+    if (touch_indev) {
+        lv_indev_set_display(touch_indev, lvgl_display);
+    }
+
     return true;
 }
 
@@ -174,10 +201,19 @@ void DisplayDriver::lvgl_flush_cb(lv_display_t* display, const lv_area_t* area, 
 }
 
 void DisplayDriver::lvgl_touch_cb(lv_indev_t* indev, lv_indev_data_t* data) {
-    // Implémentation tactile basique - à adapter selon le contrôleur tactile réel
+    uint8_t buf[5];
+    if (ft5x06_read(0x02, buf, sizeof(buf)) == ESP_OK) {
+        uint8_t touches = buf[0] & 0x0F;
+        if (touches) {
+            uint16_t x = ((buf[1] & 0x0F) << 8) | buf[2];
+            uint16_t y = ((buf[3] & 0x0F) << 8) | buf[4];
+            data->state = LV_INDEV_STATE_PRESSED;
+            data->point.x = x;
+            data->point.y = y;
+            return;
+        }
+    }
     data->state = LV_INDEV_STATE_RELEASED;
-    data->point.x = 0;
-    data->point.y = 0;
 }
 
 void DisplayDriver::set_brightness(uint8_t brightness) {
