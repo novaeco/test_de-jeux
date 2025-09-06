@@ -14,13 +14,18 @@ const char* SaveSystem::KEY_REPTILE_DATA = "reptile_data";
 const char* SaveSystem::KEY_GAME_SETTINGS = "game_cfg";
 const char* SaveSystem::KEY_SAVE_VERSION = "save_ver";
 const char* SaveSystem::KEY_LAST_SAVE_TIME = "last_save";
+const char* SaveSystem::KEY_REPTILE_COUNT_BACKUP = "reptile_cnt_bak";
+const char* SaveSystem::KEY_REPTILE_DATA_BACKUP = "reptile_data_bak";
+const char* SaveSystem::KEY_SAVE_VERSION_BACKUP = "save_ver_bak";
+const char* SaveSystem::KEY_LAST_SAVE_TIME_BACKUP = "last_save_bak";
 
 #define CURRENT_SAVE_VERSION 1
 #define MAX_REPTILES 20
-#define SAVE_DATA_MAGIC 0xREPTILE
+#define SAVE_DATA_MAGIC 0x52455054
 
-SaveSystem::SaveSystem() : is_initialized(false), save_version(CURRENT_SAVE_VERSION) {
-}
+SaveSystem::SaveSystem(GameEngine* engine)
+    : nvs_handle(0), is_initialized(false), save_version(CURRENT_SAVE_VERSION),
+      game_engine(engine), statistics{0} {}
 
 SaveSystem::~SaveSystem() {
     if (is_initialized) {
@@ -42,86 +47,135 @@ bool SaveSystem::initialize() {
     uint32_t stored_version = 0;
     size_t required_size = sizeof(stored_version);
     err = nvs_get_blob(nvs_handle, KEY_SAVE_VERSION, &stored_version, &required_size);
-    
+
     if (err == ESP_OK) {
-        if (stored_version != CURRENT_SAVE_VERSION) {
-            ESP_LOGW(TAG, "Version de sauvegarde différente: %d (actuelle: %d)", 
-                     stored_version, CURRENT_SAVE_VERSION);
-            // Migration si nécessaire
+        if (stored_version > CURRENT_SAVE_VERSION) {
+            ESP_LOGE(TAG, "Version de sauvegarde trop récente: %d", stored_version);
+            return false;
+        }
+        if (stored_version < CURRENT_SAVE_VERSION) {
+            ESP_LOGW(TAG, "Migration sauvegarde %d -> %d", stored_version, CURRENT_SAVE_VERSION);
+            save_version = CURRENT_SAVE_VERSION;
+            err = nvs_set_blob(nvs_handle, KEY_SAVE_VERSION, &save_version, sizeof(save_version));
+            if (err != ESP_OK) {
+                ESP_LOGE(TAG, "Erreur mise à jour version: %s", esp_err_to_name(err));
+                return false;
+            }
+            if (nvs_commit(nvs_handle) != ESP_OK) {
+                ESP_LOGE(TAG, "Erreur commit après migration");
+                return false;
+            }
+        }
+    } else if (err == ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGI(TAG, "Première initialisation du système de sauvegarde");
+        save_version = CURRENT_SAVE_VERSION;
+        err = nvs_set_blob(nvs_handle, KEY_SAVE_VERSION, &save_version, sizeof(save_version));
+        if (err == ESP_OK) {
+            nvs_commit(nvs_handle);
         }
     } else {
-        // Première utilisation
-        ESP_LOGI(TAG, "Première initialisation du système de sauvegarde");
+        ESP_LOGE(TAG, "Erreur lecture version: %s", esp_err_to_name(err));
+        return false;
     }
-    
+
     return true;
 }
 
 bool SaveSystem::save_game_data() {
-    if (!is_initialized) {
+    if (!is_initialized || !game_engine) {
         ESP_LOGE(TAG, "Système non initialisé");
         return false;
     }
-    
+
     uint32_t start_time = esp_timer_get_time() / 1000;
+    statistics.total_saves++;
     ESP_LOGI(TAG, "Début sauvegarde...");
-    
+
+    // Récupérer les reptiles du moteur de jeu
+    std::vector<Reptile> reptiles = game_engine->get_reptiles();
+    if (!save_reptiles(reptiles)) {
+        statistics.failed_saves++;
+        return false;
+    }
+
     // Sauvegarder la version
     esp_err_t err = nvs_set_blob(nvs_handle, KEY_SAVE_VERSION, &save_version, sizeof(save_version));
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Erreur sauvegarde version: %s", esp_err_to_name(err));
+        statistics.failed_saves++;
         return false;
     }
-    
+
     // Sauvegarder le timestamp
     uint32_t current_time = esp_timer_get_time() / 1000;
     err = nvs_set_blob(nvs_handle, KEY_LAST_SAVE_TIME, &current_time, sizeof(current_time));
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Erreur sauvegarde timestamp: %s", esp_err_to_name(err));
+        statistics.failed_saves++;
         return false;
     }
-    
+
     // Valider les modifications
     err = nvs_commit(nvs_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Erreur commit NVS: %s", esp_err_to_name(err));
+        statistics.failed_saves++;
         return false;
     }
-    
+
     uint32_t end_time = esp_timer_get_time() / 1000;
+    statistics.successful_saves++;
+    statistics.last_save_duration_ms = end_time - start_time;
+    statistics.save_data_size = get_save_size();
     ESP_LOGI(TAG, "Sauvegarde terminée en %d ms", end_time - start_time);
-    
+
     return true;
 }
 
 bool SaveSystem::load_game_data() {
-    if (!is_initialized) {
+    if (!is_initialized || !game_engine) {
         ESP_LOGE(TAG, "Système non initialisé");
         return false;
     }
-    
+
     ESP_LOGI(TAG, "Chargement des données...");
-    
+
     // Vérifier l'existence des données
     if (!has_save_data()) {
         ESP_LOGI(TAG, "Aucune sauvegarde trouvée");
         return false;
     }
-    
+
     // Charger la version
-    uint32_t stored_version;
+    uint32_t stored_version = 0;
     size_t required_size = sizeof(stored_version);
     esp_err_t err = nvs_get_blob(nvs_handle, KEY_SAVE_VERSION, &stored_version, &required_size);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Erreur lecture version: %s", esp_err_to_name(err));
         return false;
     }
-    
+
     if (stored_version > CURRENT_SAVE_VERSION) {
         ESP_LOGE(TAG, "Version de sauvegarde trop récente: %d", stored_version);
         return false;
     }
-    
+
+    if (stored_version < CURRENT_SAVE_VERSION) {
+        ESP_LOGW(TAG, "Migration sauvegarde %d -> %d", stored_version, CURRENT_SAVE_VERSION);
+        save_version = CURRENT_SAVE_VERSION;
+        err = nvs_set_blob(nvs_handle, KEY_SAVE_VERSION, &save_version, sizeof(save_version));
+        if (err == ESP_OK) {
+            nvs_commit(nvs_handle);
+        }
+    }
+
+    // Charger les reptiles
+    std::vector<Reptile> reptiles;
+    if (!load_reptiles(reptiles)) {
+        return false;
+    }
+    game_engine->set_reptiles(reptiles);
+
     ESP_LOGI(TAG, "Données chargées avec succès (version %d)", stored_version);
     return true;
 }
@@ -351,8 +405,100 @@ void SaveSystem::emergency_save() {
 
 void SaveSystem::clear_all_data() {
     if (!is_initialized) return;
-    
+
     ESP_LOGW(TAG, "Suppression de toutes les données de sauvegarde");
     nvs_erase_all(nvs_handle);
     nvs_commit(nvs_handle);
+}
+
+size_t SaveSystem::get_save_size() const {
+    if (!is_initialized) return 0;
+
+    size_t total = 0;
+    size_t size = 0;
+    if (nvs_get_blob(nvs_handle, KEY_REPTILE_DATA, nullptr, &size) == ESP_OK)
+        total += size;
+    if (nvs_get_blob(nvs_handle, KEY_REPTILE_COUNT, nullptr, &size) == ESP_OK)
+        total += size;
+    if (nvs_get_blob(nvs_handle, KEY_SAVE_VERSION, nullptr, &size) == ESP_OK)
+        total += size;
+    if (nvs_get_blob(nvs_handle, KEY_LAST_SAVE_TIME, nullptr, &size) == ESP_OK)
+        total += size;
+    return total;
+}
+
+bool SaveSystem::backup_save() {
+    if (!is_initialized) return false;
+
+    size_t size = 0;
+    esp_err_t err = nvs_get_blob(nvs_handle, KEY_REPTILE_DATA, nullptr, &size);
+    if (err != ESP_OK) return false;
+    std::vector<uint8_t> buffer(size);
+    err = nvs_get_blob(nvs_handle, KEY_REPTILE_DATA, buffer.data(), &size);
+    if (err != ESP_OK) return false;
+    err = nvs_set_blob(nvs_handle, KEY_REPTILE_DATA_BACKUP, buffer.data(), size);
+    if (err != ESP_OK) return false;
+
+    uint16_t count = 0;
+    size = sizeof(count);
+    if (nvs_get_blob(nvs_handle, KEY_REPTILE_COUNT, &count, &size) == ESP_OK) {
+        err = nvs_set_blob(nvs_handle, KEY_REPTILE_COUNT_BACKUP, &count, sizeof(count));
+        if (err != ESP_OK) return false;
+    }
+
+    uint32_t version = 0;
+    size = sizeof(version);
+    if (nvs_get_blob(nvs_handle, KEY_SAVE_VERSION, &version, &size) == ESP_OK) {
+        err = nvs_set_blob(nvs_handle, KEY_SAVE_VERSION_BACKUP, &version, sizeof(version));
+        if (err != ESP_OK) return false;
+    }
+
+    uint32_t ts = 0;
+    size = sizeof(ts);
+    if (nvs_get_blob(nvs_handle, KEY_LAST_SAVE_TIME, &ts, &size) == ESP_OK) {
+        err = nvs_set_blob(nvs_handle, KEY_LAST_SAVE_TIME_BACKUP, &ts, sizeof(ts));
+        if (err != ESP_OK) return false;
+    }
+
+    return nvs_commit(nvs_handle) == ESP_OK;
+}
+
+bool SaveSystem::restore_backup() {
+    if (!is_initialized) return false;
+
+    size_t size = 0;
+    esp_err_t err = nvs_get_blob(nvs_handle, KEY_REPTILE_DATA_BACKUP, nullptr, &size);
+    if (err != ESP_OK) return false;
+    std::vector<uint8_t> buffer(size);
+    err = nvs_get_blob(nvs_handle, KEY_REPTILE_DATA_BACKUP, buffer.data(), &size);
+    if (err != ESP_OK) return false;
+    err = nvs_set_blob(nvs_handle, KEY_REPTILE_DATA, buffer.data(), size);
+    if (err != ESP_OK) return false;
+
+    uint16_t count = 0;
+    size = sizeof(count);
+    if (nvs_get_blob(nvs_handle, KEY_REPTILE_COUNT_BACKUP, &count, &size) == ESP_OK) {
+        err = nvs_set_blob(nvs_handle, KEY_REPTILE_COUNT, &count, sizeof(count));
+        if (err != ESP_OK) return false;
+    }
+
+    uint32_t version = 0;
+    size = sizeof(version);
+    if (nvs_get_blob(nvs_handle, KEY_SAVE_VERSION_BACKUP, &version, &size) == ESP_OK) {
+        err = nvs_set_blob(nvs_handle, KEY_SAVE_VERSION, &version, sizeof(version));
+        if (err != ESP_OK) return false;
+    }
+
+    uint32_t ts = 0;
+    size = sizeof(ts);
+    if (nvs_get_blob(nvs_handle, KEY_LAST_SAVE_TIME_BACKUP, &ts, &size) == ESP_OK) {
+        err = nvs_set_blob(nvs_handle, KEY_LAST_SAVE_TIME, &ts, sizeof(ts));
+        if (err != ESP_OK) return false;
+    }
+
+    return nvs_commit(nvs_handle) == ESP_OK;
+}
+
+SaveSystem::SaveStats SaveSystem::get_save_statistics() const {
+    return statistics;
 }

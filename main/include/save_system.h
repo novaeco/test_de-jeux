@@ -1,15 +1,18 @@
 #pragma once
 
-#include "nvs_flash.h" 
+#include "nvs_flash.h"
 #include "nvs.h"
 #include "reptile_types.h"
 #include <vector>
+
+class GameEngine; // Forward declaration
 
 class SaveSystem {
 private:
     nvs_handle_t nvs_handle;
     bool is_initialized;
     uint32_t save_version;
+    GameEngine* game_engine;
     
     // Clés de sauvegarde
     static const char* NVS_NAMESPACE;
@@ -18,6 +21,10 @@ private:
     static const char* KEY_GAME_SETTINGS;
     static const char* KEY_SAVE_VERSION;
     static const char* KEY_LAST_SAVE_TIME;
+    static const char* KEY_REPTILE_COUNT_BACKUP;
+    static const char* KEY_REPTILE_DATA_BACKUP;
+    static const char* KEY_SAVE_VERSION_BACKUP;
+    static const char* KEY_LAST_SAVE_TIME_BACKUP;
     
     // Données de sauvegarde compressées
     struct SaveHeader {
@@ -36,7 +43,7 @@ private:
     bool verify_data_integrity(const uint8_t* data, size_t size, uint32_t expected_checksum);
     
 public:
-    SaveSystem();
+    SaveSystem(GameEngine* engine = nullptr);
     ~SaveSystem();
     
     bool initialize();
@@ -71,6 +78,8 @@ public:
         uint32_t last_save_duration_ms;
         size_t save_data_size;
     };
-    
+
+    SaveStats statistics;
+
     SaveStats get_save_statistics() const;
 };

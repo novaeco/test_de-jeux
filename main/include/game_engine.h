@@ -29,6 +29,8 @@ public:
     bool remove_reptile(uint8_t index);
     Reptile* get_reptile(uint8_t index);
     size_t get_reptile_count() const;
+    const std::vector<Reptile>& get_reptiles() const;
+    void set_reptiles(const std::vector<Reptile>& reptiles);
     
     // Interactions de gameplay
     bool feed_reptile(uint8_t index, FoodType food);

@@ -326,6 +326,12 @@ void GameEngine::trigger_random_events() {
 
 size_t GameEngine::get_reptile_count() const { return reptiles.size(); }
 
+const std::vector<Reptile>& GameEngine::get_reptiles() const { return reptiles; }
+
+void GameEngine::set_reptiles(const std::vector<Reptile>& new_reptiles) {
+  reptiles = new_reptiles;
+}
+
 Reptile *GameEngine::get_reptile(uint8_t index) {
   if (index >= reptiles.size())
     return nullptr;

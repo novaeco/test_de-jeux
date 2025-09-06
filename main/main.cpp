@@ -44,7 +44,7 @@ extern "C" void app_main(void) {
     display_driver = new DisplayDriver();
     game_engine = new GameEngine();
     ui_manager = new UIManager(game_engine);
-    save_system = new SaveSystem();
+    save_system = new SaveSystem(game_engine);
     
     // Initialisation des composants
     if (!display_driver->initialize()) {
