@@ -43,7 +43,6 @@ private:
     
     // Méthodes de construction d'interface
     void create_main_screen();
-    void create_reptile_info_display();
     void create_health_monitoring();
     void create_environment_controls();
     void create_feeding_interface();
@@ -51,7 +50,6 @@ private:
     void create_navigation_menu();
     
     // Callbacks d'événements
-    static void on_reptile_select(lv_event_t* e);
     static void on_feed_button(lv_event_t* e);
     static void on_temperature_adjust(lv_event_t* e);
     static void on_humidity_adjust(lv_event_t* e);
@@ -69,30 +67,21 @@ private:
     
     // Animations
     void animate_feeding(lv_obj_t* target);
-    void animate_health_change(lv_obj_t* health_bar, uint8_t new_value);
-    void animate_behavior_transition(Behavior new_behavior);
-    
+
 public:
     UIManager(GameEngine* engine);
     ~UIManager();
-    
+
     bool initialize();
     void update();
-    void handle_touch_input(lv_indev_data_t* data);
-    
+
     // Gestion des écrans
     void switch_to_screen(uint8_t screen_id);
-    void refresh_current_screen();
-    
+
     // Notifications système
     void show_feeding_reminder(const char* reptile_name);
     void show_health_alert(const char* reptile_name, const char* issue);
-    void show_breeding_notification(const char* message);
-    void show_achievement(const char* achievement);
     
-    // Interface tactile optimisée
-    void enable_touch_feedback();
-    void set_screen_brightness(uint8_t brightness);
 };
 
 // IDs des écrans
