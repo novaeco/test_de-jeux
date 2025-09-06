@@ -71,7 +71,7 @@ bool DisplayDriver::initialize() {
 
 bool DisplayDriver::configure_lcd_interface() {
     esp_lcd_rgb_panel_config_t panel_config = {
-        .data_width = 24,
+        .data_width = 16,
         .psram_trans_align = 64,
         .num_fbs = 1,
         .clk_src = LCD_CLK_SRC_DEFAULT,
@@ -98,9 +98,9 @@ bool DisplayDriver::configure_lcd_interface() {
         .pclk_gpio_num = LCD_PIN_PCLK,
         .disp_gpio_num = -1,
         .data_gpio_nums = {
-            LCD_PIN_R0, LCD_PIN_R1, LCD_PIN_R2, LCD_PIN_R3, LCD_PIN_R4, LCD_PIN_R5, LCD_PIN_R6, LCD_PIN_R7,
-            LCD_PIN_G0, LCD_PIN_G1, LCD_PIN_G2, LCD_PIN_G3, LCD_PIN_G4, LCD_PIN_G5, LCD_PIN_G6, LCD_PIN_G7,
-            LCD_PIN_B0, LCD_PIN_B1, LCD_PIN_B2, LCD_PIN_B3, LCD_PIN_B4, LCD_PIN_B5, LCD_PIN_B6, LCD_PIN_B7,
+            LCD_PIN_B3, LCD_PIN_B4, LCD_PIN_B5, LCD_PIN_B6, LCD_PIN_B7,   // D0..D4
+            LCD_PIN_G2, LCD_PIN_G3, LCD_PIN_G4, LCD_PIN_G5, LCD_PIN_G6, LCD_PIN_G7, // D5..D10
+            LCD_PIN_R3, LCD_PIN_R4, LCD_PIN_R5, LCD_PIN_R6, LCD_PIN_R7,   // D11..D15
         },
         .flags = { .fb_in_psram = 1 },
     };
