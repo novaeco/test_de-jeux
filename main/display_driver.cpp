@@ -70,40 +70,42 @@ bool DisplayDriver::initialize() {
 }
 
 bool DisplayDriver::configure_lcd_interface() {
-    esp_lcd_rgb_panel_config_t panel_config = {
-        .data_width = 16,
-        .psram_trans_align = 64,
-        .num_fbs = 1,
-        .clk_src = LCD_CLK_SRC_DEFAULT,
-        .timings = {
-            .pclk_hz = 12000000,
-            .h_res = LCD_WIDTH,
-            .v_res = LCD_HEIGHT,
-            .hsync_pulse_width = 10,
-            .hsync_back_porch = 20,
-            .hsync_front_porch = 10,
-            .vsync_pulse_width = 2,
-            .vsync_back_porch = 8,
-            .vsync_front_porch = 4,
-            .flags = {
-                .hsync_idle_low = 0,
-                .vsync_idle_low = 0,
-                .de_idle_high = 0,
-                .pclk_active_neg = 0,
-            },
+    esp_lcd_rgb_panel_config_t panel_config = {};
+    panel_config.data_width        = 16;
+    panel_config.bits_per_pixel    = 16;
+    panel_config.clk_src           = LCD_CLK_SRC_DEFAULT;
+    panel_config.timings           = {
+        .pclk_hz         = 12000000,
+        .h_res           = LCD_WIDTH,
+        .v_res           = LCD_HEIGHT,
+        .hsync_pulse_width = 10,
+        .hsync_back_porch  = 20,
+        .hsync_front_porch = 10,
+        .vsync_pulse_width = 2,
+        .vsync_back_porch  = 8,
+        .vsync_front_porch = 4,
+        .flags = {
+            .hsync_idle_low   = 0,
+            .vsync_idle_low   = 0,
+            .de_idle_high     = 0,
+            .pclk_active_neg  = 0,
         },
-        .hsync_gpio_num = LCD_PIN_HSYNC,
-        .vsync_gpio_num = LCD_PIN_VSYNC,
-        .de_gpio_num = LCD_PIN_DE,
-        .pclk_gpio_num = LCD_PIN_PCLK,
-        .disp_gpio_num = -1,
-        .data_gpio_nums = {
-            LCD_PIN_B3, LCD_PIN_B4, LCD_PIN_B5, LCD_PIN_B6, LCD_PIN_B7,   // D0..D4
-            LCD_PIN_G2, LCD_PIN_G3, LCD_PIN_G4, LCD_PIN_G5, LCD_PIN_G6, LCD_PIN_G7, // D5..D10
-            LCD_PIN_R3, LCD_PIN_R4, LCD_PIN_R5, LCD_PIN_R6, LCD_PIN_R7,   // D11..D15
-        },
-        .flags = { .fb_in_psram = 1 },
     };
+    panel_config.hsync_gpio_num    = LCD_PIN_HSYNC;
+    panel_config.vsync_gpio_num    = LCD_PIN_VSYNC;
+    panel_config.de_gpio_num       = LCD_PIN_DE;
+    panel_config.pclk_gpio_num     = LCD_PIN_PCLK;
+    panel_config.disp_gpio_num     = -1;
+    panel_config.num_fbs           = 1;
+    panel_config.bounce_buffer_size_px = 0;
+    panel_config.sram_trans_align  = 0;
+    panel_config.psram_trans_align = 64;
+    panel_config.data_gpio_nums    = {
+        LCD_PIN_B3, LCD_PIN_B4, LCD_PIN_B5, LCD_PIN_B6, LCD_PIN_B7,                     // D0..D4
+        LCD_PIN_G2, LCD_PIN_G3, LCD_PIN_G4, LCD_PIN_G5, LCD_PIN_G6, LCD_PIN_G7,         // D5..D10
+        LCD_PIN_R3, LCD_PIN_R4, LCD_PIN_R5, LCD_PIN_R6, LCD_PIN_R7,                     // D11..D15
+    };
+    panel_config.flags.fb_in_psram = 1;
 
     ESP_ERROR_CHECK(esp_lcd_new_rgb_panel(&panel_config, &panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
