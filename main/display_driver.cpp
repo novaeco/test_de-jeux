@@ -4,6 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_heap_caps.h"
+#include <cstring>
 
 static const char* TAG = "DisplayDriver";
 
@@ -70,7 +71,15 @@ bool DisplayDriver::initialize() {
 }
 
 bool DisplayDriver::configure_lcd_interface() {
+    static const int rgb_pins[16] = {
+        LCD_PIN_B3, LCD_PIN_B4, LCD_PIN_B5, LCD_PIN_B6, LCD_PIN_B7,   // D0..D4
+        LCD_PIN_G2, LCD_PIN_G3, LCD_PIN_G4, LCD_PIN_G5, LCD_PIN_G6, LCD_PIN_G7, // D5..D10
+        LCD_PIN_R3, LCD_PIN_R4, LCD_PIN_R5, LCD_PIN_R6, LCD_PIN_R7,   // D11..D15
+    };
+
     esp_lcd_rgb_panel_config_t panel_config = {};
+    memcpy(panel_config.data_gpio_nums, rgb_pins, sizeof(rgb_pins));
+
     panel_config.data_width        = 16;
     panel_config.bits_per_pixel    = 16;
     panel_config.clk_src           = LCD_CLK_SRC_DEFAULT;
@@ -100,11 +109,6 @@ bool DisplayDriver::configure_lcd_interface() {
     panel_config.bounce_buffer_size_px = 0;
     panel_config.sram_trans_align  = 0;
     panel_config.psram_trans_align = 64;
-    panel_config.data_gpio_nums    = {
-        LCD_PIN_B3, LCD_PIN_B4, LCD_PIN_B5, LCD_PIN_B6, LCD_PIN_B7,                     // D0..D4
-        LCD_PIN_G2, LCD_PIN_G3, LCD_PIN_G4, LCD_PIN_G5, LCD_PIN_G6, LCD_PIN_G7,         // D5..D10
-        LCD_PIN_R3, LCD_PIN_R4, LCD_PIN_R5, LCD_PIN_R6, LCD_PIN_R7,                     // D11..D15
-    };
     panel_config.flags.fb_in_psram = 1;
 
     ESP_ERROR_CHECK(esp_lcd_new_rgb_panel(&panel_config, &panel_handle));
