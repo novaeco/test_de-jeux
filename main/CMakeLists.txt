@@ -10,11 +10,15 @@ idf_component_register(
     INCLUDE_DIRS 
         "."
         "include"
-    REQUIRES 
+    REQUIRES
         lvgl
-        driver 
-        esp_timer 
-        nvs_flash 
+        feeding
+        habitat
+        reproduction
+        health
+        driver
+        esp_timer
+        nvs_flash
         spiffs
         spi_flash
         esp_lcd
