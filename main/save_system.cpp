@@ -24,7 +24,8 @@ const char* SaveSystem::KEY_LAST_SAVE_TIME_BACKUP = "last_save_bak";
 #define SAVE_DATA_MAGIC 0x52455054
 
 SaveSystem::SaveSystem(GameEngine* engine)
-    : game_engine(engine), statistics{} {}
+    : game_engine(engine), statistics{} {
+}
 
 SaveSystem::~SaveSystem() {
     if (is_initialized) {
