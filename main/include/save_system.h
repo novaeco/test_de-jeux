@@ -9,10 +9,10 @@ class GameEngine; // Forward declaration
 
 class SaveSystem {
 private:
-    nvs_handle_t nvs_handle;
-    bool is_initialized;
-    uint32_t save_version;
-    GameEngine* game_engine;
+    nvs_handle_t nvs_handle = 0;
+    bool is_initialized = false;
+    uint32_t save_version = 1;
+    GameEngine* game_engine = nullptr;
     
     // Clés de sauvegarde
     static const char* NVS_NAMESPACE;
@@ -72,14 +72,14 @@ public:
     
     // Statistiques
     struct SaveStats {
-        uint32_t total_saves;
-        uint32_t successful_saves;
-        uint32_t failed_saves;
-        uint32_t last_save_duration_ms;
-        size_t save_data_size;
+        uint32_t total_saves = 0;
+        uint32_t successful_saves = 0;
+        uint32_t failed_saves = 0;
+        uint32_t last_save_duration_ms = 0;
+        size_t save_data_size = 0;
     };
 
-    SaveStats statistics;
+    SaveStats statistics{};
 
     SaveStats get_save_statistics() const;
 };
